@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Allow everything for testing purposes -->
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
+    <title>Pixel Server Tester</title>
+    
+    <!-- Try local first, fallback to CDN -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        if (typeof io === 'undefined') {
+            document.write('<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"><\/script>');
+        }
+    </script>
+
+    <style>
+        body { font-family: monospace; padding: 20px; background: #222; color: #0f0; }
+        button { padding: 10px; margin: 5px; cursor: pointer; font-weight: bold; }
+        #logs { border: 1px solid #444; padding: 10px; height: 300px; overflow-y: scroll; background: #000; }
+        .success { color: #0f0; }
+        .info { color: #0ff; }
+        .error { color: #f00; }
+    </style>
+</head>
+<body>
+    <h1>Pixel Server Tester (Socket.IO)</h1>
+    <p>Status: <span id="status">Disconnected</span></p>
+    <div>
+        <button onclick="connect()">1. Connect</button>
+        <button onclick="join()">2. Join Game</button>
+        <button onclick="move()">3. Move to Zone</button>
+        <button onclick="leave()">4. Disconnect</button>
+    </div>
+    <h3>Logs:</h3>
+    <div id="logs"></div>
+
+    <script>
+        let socket;
+
+        function log(msg, type = 'info') {
+            const logs = document.getElementById('logs');
+            logs.innerHTML += `<div class="${type}">> ${msg}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function connect() {
+            if (socket && socket.connected) return;
+            log('Connecting...', 'info');
+            
+            // Connect to window location (explicitly)
+            socket = io(window.location.origin, {
+                transports: ['websocket', 'polling']
+            });
+
+            socket.on('connect', () => {
+                document.getElementById('status').innerText = 'Connected';
+                log('✅ Connected! ID: ' + socket.id, 'success');
+            });
+
+            socket.on('connect_error', (err) => {
+                 log('❌ Connection Error: ' + err.message, 'error');
+            });
+
+            socket.on('current-users', (users) => {
+                log(`👥 Current Users: ${Object.keys(users).length}`, 'info');
+            });
+
+            socket.on('room-changed', (data) => {
+                log(`🚪 Room Changed: ${JSON.stringify(data)}`, 'success');
+                if (data.entered) alert(`Entered Zone: ${data.entered}`);
+            });
+
+            socket.on('disconnect', () => {
+                document.getElementById('status').innerText = 'Disconnected';
+                log('❌ Disconnected', 'error');
+            });
+        }
+
+        function join() {
+            if (!socket || !socket.connected) return log('Not connected!', 'error');
+            socket.emit('join-room', { username: 'Browser_User', avatar: 'hero-1' });
+            log('Sent: join-room', 'info');
+        }
+
+        function move() {
+            if (!socket || !socket.connected) return log('Not connected!', 'error');
+            // Walking into meeting-room-1
+            socket.emit('player-move', { x: 40, y: 40, direction: 'down' });
+            log('Sent: player-move (to 40,40)', 'info');
+        }
+
+        function leave() {
+            if (socket) socket.disconnect();
+        }
+    </script>
+</body>
+</html>
