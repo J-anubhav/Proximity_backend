@@ -1,18 +1,21 @@
-import { Player, RoomState } from '../types';
+import { PlayerState, RoomState } from '../types';
 
 class StateManager {
     private state: RoomState = {
         players: {}
     };
 
-    addPlayer(id: string, data: { username: string; role: string }): Player {
-        const newPlayer: Player = {
+    addPlayer(id: string, data: { username: string; avatar?: string }): PlayerState {
+        const newPlayer: PlayerState = {
             id,
             username: data.username,
-            role: data.role,
-            x: 0, // Default start position
-            y: 0,
-            direction: 'down'
+            avatar: data.avatar || 'default',
+            x: 400, // Default start position
+            y: 300,
+            direction: 'down',
+            isMoving: false,
+            currentRoom: null,
+            lastActive: Date.now()
         };
         this.state.players[id] = newPlayer;
         return newPlayer;
@@ -22,22 +25,24 @@ class StateManager {
         delete this.state.players[id];
     }
 
-    updatePlayerPosition(id: string, data: { x: number; y: number; direction: string }): Player | null {
+    updatePlayerPosition(id: string, data: { x: number; y: number; direction: string }): PlayerState | null {
         const player = this.state.players[id];
         if (player) {
             player.x = data.x;
             player.y = data.y;
             player.direction = data.direction;
+            player.isMoving = true; // Assume moving if updating
+            player.lastActive = Date.now();
             return player;
         }
         return null;
     }
 
-    getPlayerById(id: string): Player | undefined {
+    getPlayerById(id: string): PlayerState | undefined {
         return this.state.players[id];
     }
 
-    getAllPlayers(): Record<string, Player> {
+    getAllPlayers(): Record<string, PlayerState> {
         return this.state.players;
     }
 }

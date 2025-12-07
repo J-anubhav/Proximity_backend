@@ -26,3 +26,22 @@ export interface LoginResponse {
     spawn: { x: number; y: number };
     mapConfig?: any;
 }
+
+export interface ChatMessage {
+    id: string;
+    authorId: string;
+    authorName: string;
+    content: string;
+    timestamp: number;
+    type: 'global' | 'private';
+    targetId?: string;
+}
+
+export interface WebRTCSignal {
+    signal: any;
+    targetSocketId: string;
+}
+
+export interface RoomState {
+    players: Record<string, PlayerState>;
+}

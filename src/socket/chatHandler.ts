@@ -1,10 +1,7 @@
 import { Socket, Server } from 'socket.io';
 import { state } from '../state/stateManager';
 import { ChatMessage } from '../types';
-import { v4 as uuidv4 } from 'uuid'; // You might need to install uuid or just use a simple random string
-
-// Simple ID generator if uuid is not installed, or use Date.now()
-const generateId = () => Math.random().toString(36).substr(2, 9);
+import { v4 as uuidv4 } from 'uuid';
 
 export const registerChatHandlers = (io: Server, socket: Socket) => {
     // Event: send-global-chat
@@ -13,7 +10,7 @@ export const registerChatHandlers = (io: Server, socket: Socket) => {
         if (!player) return;
 
         const chatMessage: ChatMessage = {
-            id: generateId(),
+            id: uuidv4(),
             authorId: player.id,
             authorName: player.username,
             content: data.message,
@@ -31,7 +28,7 @@ export const registerChatHandlers = (io: Server, socket: Socket) => {
         if (!player) return;
 
         const chatMessage: ChatMessage = {
-            id: generateId(),
+            id: uuidv4(),
             authorId: player.id,
             authorName: player.username,
             content: data.message,

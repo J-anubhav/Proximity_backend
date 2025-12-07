@@ -3,11 +3,14 @@ import { state } from '../state/stateManager';
 
 export const registerPlayerHandlers = (io: Server, socket: Socket) => {
     // Event: join-room
-    socket.on('join-room', (data: { username: string; role: string }) => {
+    socket.on('join-room', (data: { username: string; avatar?: string }) => {
         console.log(`Player joined: ${socket.id} (${data.username})`);
 
         // 1. ADD Player to state
-        const newPlayer = state.addPlayer(socket.id, data);
+        const newPlayer = state.addPlayer(socket.id, {
+            username: data.username,
+            avatar: data.avatar
+        });
 
         // 2. EMIT 'current-users' to THIS socket
         socket.emit('current-users', state.getAllPlayers());
