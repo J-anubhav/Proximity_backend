@@ -1,27 +1,28 @@
-export interface Player {
-    id: string;
+export interface PlayerState {
+    id: string;          // uuid or socket.id
     username: string;
-    role: string;
+    avatar?: string;
     x: number;
     y: number;
-    direction: string;
+    direction: string;   // 'left', 'right', 'up', 'down'
+    isMoving: boolean;
+    currentRoom: string | null; // e.g., 'meeting-room-1' or null
+    lastActive: number;  // timestamp for timeout cleanup
 }
 
-export interface ChatMessage {
-    id: string;
-    authorId: string;
-    authorName: string;
-    content: string;
-    timestamp: number;
-    type: 'global' | 'private';
-    targetId?: string;
+export interface MapZone {
+    name: string;        // 'meeting-room-1'
+    type: 'jitsi' | 'entrance';
+    x: number;           // Top-left X
+    y: number;           // Top-left Y
+    width: number;
+    height: number;
 }
 
-export interface WebRTCSignal {
-    signal: any;
-    targetSocketId: string;
-}
-
-export interface RoomState {
-    players: Record<string, Player>;
+export interface LoginResponse {
+    userId: string;
+    username: string;
+    avatar: string;
+    spawn: { x: number; y: number };
+    mapConfig?: any;
 }

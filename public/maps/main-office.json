@@ -1,6 +1,32 @@
 {
     "width": 32,
     "height": 32,
-    "layers": [],
+    "layers": [
+        {
+            "id": 1,
+            "name": "Zones",
+            "type": "objectgroup",
+            "opacity": 1,
+            "visible": true,
+            "x": 0,
+            "y": 0,
+            "draworder": "topdown",
+            "objects": [
+                {
+                    "id": 1,
+                    "name": "meeting-room-1",
+                    "type": "",
+                    "shape": "rectangle",
+                    "x": 32,
+                    "y": 32,
+                    "width": 128,
+                    "height": 128,
+                    "rotation": 0,
+                    "visible": true,
+                    "properties": []
+                }
+            ]
+        }
+    ],
     "tilesets": []
 }
