@@ -5,8 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const registerChatHandlers = (io: Server, socket: Socket) => {
     // Event: send-global-chat
-    socket.on('send-global-chat', (data: { message: string }) => {
-        const player = state.getPlayerById(socket.id);
+    socket.on('send-global-chat', async (data: { message: string }) => {
+        const player = await state.getPlayerById(socket.id);
         if (!player) return;
 
         const chatMessage: ChatMessage = {
@@ -23,8 +23,8 @@ export const registerChatHandlers = (io: Server, socket: Socket) => {
     });
 
     // Event: send-private-dm
-    socket.on('send-private-dm', (data: { targetSocketId: string; message: string }) => {
-        const player = state.getPlayerById(socket.id);
+    socket.on('send-private-dm', async (data: { targetSocketId: string; message: string }) => {
+        const player = await state.getPlayerById(socket.id);
         if (!player) return;
 
         const chatMessage: ChatMessage = {

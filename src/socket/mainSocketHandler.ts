@@ -14,11 +14,11 @@ export const initializeSocketIO = (io: Server) => {
         registerWebRTCHandlers(io, socket);
 
         // Handle Disconnect
-        socket.on('disconnect', () => {
+        socket.on('disconnect', async () => {
             console.log(`Client disconnected: ${socket.id}`);
 
             // 1. Remove player from state
-            state.removePlayer(socket.id);
+            await state.removePlayer(socket.id);
 
             // 2. Broadcast 'user-left'
             socket.broadcast.emit('user-left', socket.id);
