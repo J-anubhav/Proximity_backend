@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
-import { Room, User, WorkSession } from '../models';
+import { Room, User, WorkSession, calculateWorkTime } from '../models';
 import { generateRoomCode, normalizeRoomCode, isValidRoomCode } from '../utils/roomCode';
 import { generateToken, AuthenticatedRequest } from '../middleware/auth';
 
 /**
  * POST /api/v1/rooms/create
  * Create a new room with a unique 6-char code
+ * NOTE: User can only have ONE active room at a time
  */
 export const createRoom = async (req: Request, res: Response) => {
     try {
@@ -17,6 +18,26 @@ export const createRoom = async (req: Request, res: Response) => {
         }
         if (!roomName || roomName.length < 1) {
             return res.status(400).json({ error: 'Room name is required' });
+        }
+
+        // Check if this username already has an active room (one room per user)
+        const existingCreator = await User.findOne({
+            username: username.toLowerCase().trim()
+        });
+
+        if (existingCreator) {
+            const existingRoom = await Room.findOne({
+                creatorId: existingCreator._id,
+                isActive: true,
+                expiresAt: { $gt: new Date() }
+            });
+
+            if (existingRoom) {
+                return res.status(400).json({
+                    error: 'You already have an active room. Abolish it first before creating a new one.',
+                    existingRoomCode: existingRoom.code
+                });
+            }
         }
 
         // Generate unique room code (retry if collision)
@@ -33,7 +54,7 @@ export const createRoom = async (req: Request, res: Response) => {
             return res.status(500).json({ error: 'Failed to generate unique room code' });
         }
 
-        // Create user
+        // Create user (store username lowercase for duplicate check)
         const user = await User.create({
             username,
             avatar: avatar || 'default',
@@ -201,14 +222,17 @@ export const abolishRoom = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 /**
- * GET /api/v1/rooms/:roomId
- * Get room details
+ * GET /api/v1/rooms/:roomCode
+ * Get room details by ROOM CODE (not MongoDB ID)
  */
 export const getRoomDetails = async (req: AuthenticatedRequest, res: Response) => {
     try {
-        const { roomId } = req.params;
+        const { roomCode } = req.params;
 
-        const room = await Room.findById(roomId).populate('creatorId', 'username avatar');
+        // Normalize code
+        const normalizedCode = normalizeRoomCode(roomCode);
+
+        const room = await Room.findOne({ code: normalizedCode }).populate('creatorId', 'username avatar');
         if (!room) {
             return res.status(404).json({ error: 'Room not found' });
         }
@@ -218,7 +242,7 @@ export const getRoomDetails = async (req: AuthenticatedRequest, res: Response) =
 
         return res.status(200).json({
             roomId: room._id,
-            code: room.code,
+            roomCode: room.code,
             name: room.name,
             creator: room.creatorId,
             createdAt: room.createdAt,
@@ -289,3 +313,73 @@ export const rejoinRoom = async (req: AuthenticatedRequest, res: Response) => {
         return res.status(500).json({ error: 'Failed to rejoin room' });
     }
 };
+
+/**
+ * POST /api/v1/logout
+ * Logout user and calculate work time
+ */
+export const logout = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const { userId, roomCode, username } = req.user;
+
+        // Find user
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Find and close open work session
+        const session = await WorkSession.findOne({
+            userId,
+            logoutTime: null
+        });
+
+        let workTimeResult: {
+            totalMinutes: number;
+            category: 'half' | 'full' | 'overtime';
+            displayText: string;
+        } = {
+            totalMinutes: 0,
+            category: 'half',
+            displayText: 'No active session'
+        };
+
+        if (session) {
+            const now = new Date();
+            const workTime = calculateWorkTime(session.loginTime, now);
+            session.logoutTime = now;
+            session.totalMinutes = workTime.totalMinutes;
+            session.category = workTime.category;
+            await session.save();
+            workTimeResult = workTime;
+        }
+
+        // Update user
+        user.lastLogout = new Date();
+        user.currentRoomId = null;
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Logged out successfully',
+            username,
+            roomCode,
+            workTime: {
+                totalMinutes: workTimeResult.totalMinutes,
+                hours: Math.floor(workTimeResult.totalMinutes / 60),
+                minutes: workTimeResult.totalMinutes % 60,
+                category: workTimeResult.category,
+                displayText: workTimeResult.displayText
+            }
+        });
+
+    } catch (error) {
+        console.error('Logout error:', error);
+        return res.status(500).json({ error: 'Failed to logout' });
+    }
+};
+

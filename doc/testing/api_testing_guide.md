@@ -5,13 +5,10 @@
 http://localhost:3000/api/v1
 ```
 
-## Test with cURL or Bruno/Postman
-
 ---
 
 ## 1. Health Check
 
-### ✅ Success
 ```bash
 curl http://localhost:3000/api/v1/health
 ```
@@ -21,7 +18,9 @@ curl http://localhost:3000/api/v1/health
 
 ## 2. Room Management
 
-### 2.1 Create Room ✅
+### 2.1 Create Room
+**NOTE: One room per user - can't create if you already have an active room!**
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/rooms/create \
   -H "Content-Type: application/json" \
@@ -32,15 +31,13 @@ curl -X POST http://localhost:3000/api/v1/rooms/create \
   }'
 ```
 
-**Success Response (201):**
+**Success (201):**
 ```json
 {
   "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token": "eyJhbGciOiJIUzI1...",
   "userId": "675fd1234...",
   "username": "John",
-  "avatar": "hero-1",
-  "roomId": "675fd1234...",
   "roomCode": "ABC123",
   "roomName": "My Office",
   "isCreator": true,
@@ -49,19 +46,18 @@ curl -X POST http://localhost:3000/api/v1/rooms/create \
 }
 ```
 
-**Error - Missing username (400):**
+**Error - Already has room (400):**
 ```json
-{ "error": "Username must be at least 2 characters" }
-```
-
-**Error - Missing room name (400):**
-```json
-{ "error": "Room name is required" }
+{
+  "error": "You already have an active room. Abolish it first before creating a new one.",
+  "existingRoomCode": "XYZ789"
+}
 ```
 
 ---
 
-### 2.2 Join Room ✅
+### 2.2 Join Room (by Code)
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/rooms/join \
   -H "Content-Type: application/json" \
@@ -72,27 +68,7 @@ curl -X POST http://localhost:3000/api/v1/rooms/join \
   }'
 ```
 
-**Success Response (200):**
-```json
-{
-  "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "userId": "675fd5678...",
-  "username": "Jane",
-  "avatar": "hero-2",
-  "roomId": "675fd1234...",
-  "roomCode": "ABC123",
-  "roomName": "My Office",
-  "isCreator": false,
-  "expiresAt": "2024-12-18T02:00:00.000Z",
-  "spawn": { "x": 435, "y": 320 }
-}
-```
-
-**Error - Invalid code format (400):**
-```json
-{ "error": "Invalid room code format" }
-```
+**Success (200):** Returns token and room details
 
 **Error - Room not found (404):**
 ```json
@@ -101,91 +77,145 @@ curl -X POST http://localhost:3000/api/v1/rooms/join \
 
 ---
 
-### 2.3 Rejoin Room (with token) ✅
+### 2.3 Get Room Details (by Room Code)
+
+```bash
+curl http://localhost:3000/api/v1/rooms/ABC123
+```
+
+**Success (200):**
+```json
+{
+  "roomCode": "ABC123",
+  "name": "My Office",
+  "creator": { "username": "John", "avatar": "hero-1" },
+  "users": [...]
+}
+```
+
+---
+
+### 2.4 Rejoin Room (with Token)
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/rooms/rejoin \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-```
-
-**Success Response (200):**
-```json
-{
-  "success": true,
-  "userId": "675fd1234...",
-  "username": "John",
-  "avatar": "hero-1",
-  "roomId": "675fd1234...",
-  "roomCode": "ABC123",
-  "roomName": "My Office",
-  "isCreator": true,
-  "expiresAt": "2024-12-18T02:00:00.000Z",
-  "spawn": { "x": 410, "y": 325 }
-}
-```
-
-**Error - Invalid token (401):**
-```json
-{ "error": "Invalid or expired token" }
-```
-
-**Error - Room expired (404):**
-```json
-{ "error": "Room no longer exists or has expired" }
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ---
 
-### 2.4 Abolish Room (creator only) ✅
+### 2.5 Abolish Room (Creator Only)
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/rooms/abolish \
-  -H "Authorization: Bearer CREATOR_TOKEN_HERE"
+  -H "Authorization: Bearer CREATOR_TOKEN"
 ```
 
-**Success Response (200):**
+**Success (200):**
 ```json
-{
-  "success": true,
-  "message": "Room abolished successfully"
-}
-```
-
-**Error - Not creator (403):**
-```json
-{ "error": "Only room creator can abolish the room" }
+{ "success": true, "message": "Room abolished successfully" }
 ```
 
 ---
 
-### 2.5 Get Room Details ✅
+## 3. Logout (with Work Time)
+
 ```bash
-curl http://localhost:3000/api/v1/rooms/ROOM_ID_HERE
+curl -X POST http://localhost:3000/api/v1/logout \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-**Success Response (200):**
+**Success (200):**
 ```json
 {
-  "roomId": "675fd1234...",
-  "code": "ABC123",
-  "name": "My Office",
-  "creator": { "_id": "...", "username": "John", "avatar": "hero-1" },
-  "createdAt": "2024-12-17T02:00:00.000Z",
-  "expiresAt": "2024-12-18T02:00:00.000Z",
-  "isActive": true,
-  "users": [
-    { "_id": "...", "username": "John", "avatar": "hero-1" },
-    { "_id": "...", "username": "Jane", "avatar": "hero-2" }
+  "success": true,
+  "message": "Logged out successfully",
+  "username": "John",
+  "roomCode": "ABC123",
+  "workTime": {
+    "totalMinutes": 245,
+    "hours": 4,
+    "minutes": 5,
+    "category": "full",
+    "displayText": "4h 5m (Full Day)"
+  }
+}
+```
+
+**Work Time Categories:**
+- `< 4 hours` → **half** (Half Day)
+- `4-8 hours` → **full** (Full Day)
+- `> 8 hours` → **overtime** (8h + Xh OT)
+
+---
+
+## 4. Kanban Tasks (by Room Code)
+
+### 4.1 Get Tasks
+
+```bash
+curl http://localhost:3000/api/v1/rooms/ABC123/tasks
+```
+
+**Success (200):**
+```json
+{
+  "roomCode": "ABC123",
+  "tasks": [...],
+  "kanban": [
+    { "key": "todo", "label": "To Do", "tasks": [...] },
+    { "key": "inprogress", "label": "In Progress", "tasks": [] },
+    { "key": "alpha", "label": "Alpha Testing", "tasks": [] },
+    { "key": "beta", "label": "Beta Testing", "tasks": [] },
+    { "key": "prod", "label": "Prod (Done)", "tasks": [] }
   ]
 }
 ```
 
 ---
 
-## 3. Kanban Tasks
+### 4.2 Create Task
 
-### 3.1 Get All Tasks ✅
 ```bash
-curl http://localhost:3000/api/v1/rooms/ROOM_ID_HERE/tasks
+curl -X POST http://localhost:3000/api/v1/rooms/ABC123/tasks \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{ "title": "Fix login bug", "description": "Details here" }'
+```
+
+---
+
+### 4.3 Update Task (Move Columns)
+
+```bash
+curl -X PATCH http://localhost:3000/api/v1/tasks/TASK_ID \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{ "status": "inprogress" }'
+```
+
+**Valid status:** `todo`, `inprogress`, `alpha`, `beta`, `prod`
+
+---
+
+### 4.4 Delete Task
+
+```bash
+curl -X DELETE http://localhost:3000/api/v1/tasks/TASK_ID \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## 5. Quick Test Flow
+
+1. **Create Room** → Save `token` and `roomCode`
+2. **Create Task** using `roomCode`
+3. **Update Task** → Move to "inprogress"
+4. **Try Create Another Room** → Should fail (one room per user)
+5. **Logout** → Check work time response
+6. **Abolish Room** → Room deleted
+
 ```
 
 **Success Response (200):**

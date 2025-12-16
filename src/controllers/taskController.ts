@@ -1,29 +1,28 @@
 import { Request, Response } from 'express';
 import { Task, Room, KANBAN_COLUMNS } from '../models';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { normalizeRoomCode } from '../utils/roomCode';
 import mongoose from 'mongoose';
 
 /**
- * GET /api/v1/rooms/:roomId/tasks
- * Get all tasks for a room
+ * GET /api/v1/rooms/:roomCode/tasks
+ * Get all tasks for a room by ROOM CODE
  */
 export const getTasks = async (req: AuthenticatedRequest, res: Response) => {
     try {
-        const { roomId } = req.params;
+        const { roomCode } = req.params;
 
-        // Validate roomId
-        if (!mongoose.Types.ObjectId.isValid(roomId)) {
-            return res.status(400).json({ error: 'Invalid room ID' });
-        }
+        // Normalize code
+        const normalizedCode = normalizeRoomCode(roomCode);
 
-        // Verify room exists
-        const room = await Room.findById(roomId);
+        // Find room by code
+        const room = await Room.findOne({ code: normalizedCode });
         if (!room || !room.isActive) {
             return res.status(404).json({ error: 'Room not found' });
         }
 
         // Fetch all tasks for the room
-        const tasks = await Task.find({ roomId }).sort({ createdAt: 1 });
+        const tasks = await Task.find({ roomId: room._id }).sort({ createdAt: 1 });
 
         // Group tasks by status for Kanban view
         const kanban = KANBAN_COLUMNS.map(col => ({
@@ -32,6 +31,7 @@ export const getTasks = async (req: AuthenticatedRequest, res: Response) => {
         }));
 
         return res.status(200).json({
+            roomCode: normalizedCode,
             tasks,
             kanban,
             columns: KANBAN_COLUMNS
@@ -44,12 +44,12 @@ export const getTasks = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 /**
- * POST /api/v1/rooms/:roomId/tasks
- * Create a new task
+ * POST /api/v1/rooms/:roomCode/tasks
+ * Create a new task by ROOM CODE
  */
 export const createTask = async (req: AuthenticatedRequest, res: Response) => {
     try {
-        const { roomId } = req.params;
+        const { roomCode } = req.params;
         const { title, description, status } = req.body;
 
         // Validation
@@ -57,19 +57,18 @@ export const createTask = async (req: AuthenticatedRequest, res: Response) => {
             return res.status(400).json({ error: 'Task title is required' });
         }
 
-        if (!mongoose.Types.ObjectId.isValid(roomId)) {
-            return res.status(400).json({ error: 'Invalid room ID' });
-        }
+        // Normalize code
+        const normalizedCode = normalizeRoomCode(roomCode);
 
-        // Verify room exists
-        const room = await Room.findById(roomId);
+        // Find room by code
+        const room = await Room.findOne({ code: normalizedCode });
         if (!room || !room.isActive) {
             return res.status(404).json({ error: 'Room not found' });
         }
 
         // Create task
         const task = await Task.create({
-            roomId,
+            roomId: room._id,
             title: title.trim(),
             description: description || '',
             status: status || 'todo'

@@ -13,11 +13,15 @@ router.get('/health', (req, res) => res.send('Pixel Server OK'));
 // Auth (legacy - kept for backward compatibility)
 router.post('/login', AuthController.login);
 
+// Logout with work time calculation
+router.post('/logout', authMiddleware, RoomController.logout);
+
 // Map
 router.get('/map', MapController.getMap);
 
 // ============ Room Management ============
 // Create new room (no auth required - creates new user)
+// NOTE: One room per user - will fail if user already has active room
 router.post('/rooms/create', RoomController.createRoom);
 
 // Join existing room by code (no auth required - creates new user)
@@ -29,15 +33,15 @@ router.post('/rooms/rejoin', authMiddleware, RoomController.rejoinRoom);
 // Abolish room - creator only (auth required)
 router.post('/rooms/abolish', authMiddleware, RoomController.abolishRoom);
 
-// Get room details (optional auth)
-router.get('/rooms/:roomId', optionalAuthMiddleware, RoomController.getRoomDetails);
+// Get room details by ROOM CODE (not MongoDB ID)
+router.get('/rooms/:roomCode', optionalAuthMiddleware, RoomController.getRoomDetails);
 
 // ============ Kanban Tasks ============
-// Get all tasks for a room
-router.get('/rooms/:roomId/tasks', optionalAuthMiddleware, TaskController.getTasks);
+// Get all tasks for a room (by room code)
+router.get('/rooms/:roomCode/tasks', optionalAuthMiddleware, TaskController.getTasks);
 
-// Create a new task
-router.post('/rooms/:roomId/tasks', authMiddleware, TaskController.createTask);
+// Create a new task (by room code)
+router.post('/rooms/:roomCode/tasks', authMiddleware, TaskController.createTask);
 
 // Update a task (move columns, edit)
 router.patch('/tasks/:taskId', authMiddleware, TaskController.updateTask);
@@ -46,3 +50,4 @@ router.patch('/tasks/:taskId', authMiddleware, TaskController.updateTask);
 router.delete('/tasks/:taskId', authMiddleware, TaskController.deleteTask);
 
 export default router;
+
