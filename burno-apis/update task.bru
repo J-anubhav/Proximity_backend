@@ -1,0 +1,15 @@
+meta {
+  name: update task
+  type: http
+  seq: 12
+}
+
+patch {
+  url: http://localhost:3000/api/v1/tasks/TASK_ID_HERE
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
