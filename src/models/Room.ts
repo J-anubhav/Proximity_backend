@@ -43,8 +43,7 @@ const RoomSchema = new Schema<IRoom>({
     }
 });
 
-// Index for code lookups and active room queries
-RoomSchema.index({ code: 1 });
+// Index for active room queries (code index already created by unique: true)
 RoomSchema.index({ isActive: 1, expiresAt: 1 });
 RoomSchema.index({ creatorId: 1 });
 

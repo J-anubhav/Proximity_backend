@@ -45,3 +45,59 @@ export interface WebRTCSignal {
 export interface RoomState {
     players: Record<string, PlayerState>;
 }
+
+// ============ New Types for Room/Kanban System ============
+
+export type TaskStatus = 'todo' | 'inprogress' | 'alpha' | 'beta' | 'prod';
+
+export type WorkCategory = 'half' | 'full' | 'overtime';
+
+export interface RoomResponse {
+    success: boolean;
+    token?: string;
+    userId: string;
+    username: string;
+    avatar: string;
+    roomId: string;
+    roomCode: string;
+    roomName: string;
+    isCreator: boolean;
+    expiresAt: Date;
+    spawn: { x: number; y: number };
+}
+
+export interface TaskData {
+    _id: string;
+    roomId: string;
+    title: string;
+    description: string;
+    status: TaskStatus;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface ToastNotification {
+    type: 'user' | 'task' | 'room';
+    message: string;
+}
+
+export interface UserJoinedPayload {
+    id: string;
+    username: string;
+    avatar: string;
+    notification: ToastNotification;
+}
+
+export interface UserLeftPayload {
+    socketId: string;
+    username: string;
+    workTime: string;
+    notification: ToastNotification;
+}
+
+export interface TaskEventPayload {
+    task?: TaskData;
+    taskId?: string;
+    notification: ToastNotification;
+}
+

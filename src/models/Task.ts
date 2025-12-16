@@ -32,25 +32,13 @@ const TaskSchema = new Schema<ITask>({
         type: String,
         enum: ['todo', 'inprogress', 'alpha', 'beta', 'prod'],
         default: 'todo'
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now
     }
+}, {
+    timestamps: true // Auto-manages createdAt and updatedAt
 });
 
 // Index for fetching tasks by room
 TaskSchema.index({ roomId: 1, status: 1 });
-
-// Auto-update updatedAt on save
-TaskSchema.pre('save', function (next) {
-    this.updatedAt = new Date();
-    next();
-});
 
 export const Task = mongoose.model<ITask>('Task', TaskSchema);
 
@@ -62,3 +50,4 @@ export const KANBAN_COLUMNS = [
     { key: 'beta', label: 'Beta Testing' },
     { key: 'prod', label: 'Prod (Done)' }
 ] as const;
+
