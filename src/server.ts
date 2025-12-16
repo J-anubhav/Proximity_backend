@@ -2,7 +2,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 import app from './app';
 import { config } from './config/config';
-import { connectRedis } from './config/redis';
+import { connectRedis, redisClient } from './config/redis';
 import { initializeSocketIO } from './socket/mainSocketHandler';
 
 const server = http.createServer(app);
@@ -16,8 +16,17 @@ const io = new Server(server, {
 
 const startServer = async () => {
     try {
-        // 1. Connect to Redis
-        await connectRedis();
+        try {
+            await connectRedis();
+        } catch (err) {
+            console.warn("⚠️ Redis connection failed. Disconnecting and falling back to in-memory state.");
+            try {
+                // Stop retrying
+                await redisClient.disconnect();
+            } catch (disconnectErr) {
+                // Ignore disconnect error
+            }
+        }
 
         // 2. Initialize Socket Handlers
         initializeSocketIO(io);
