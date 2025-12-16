@@ -1,0 +1,28 @@
+meta {
+  name: creat2
+  type: http
+  seq: 13
+}
+
+post {
+  url: http://localhost:3000/api/v1/rooms/create
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTQxZDkyMjJiZDc4NmE1MWI1NmU2NzUiLCJyb29tSWQiOiI2OTQxZDkyMjJiZDc4NmE1MWI1NmU2NzciLCJyb29tQ29kZSI6IlozOFVEWSIsInVzZXJuYW1lIjoiSm9obiIsImlhdCI6MTc2NTkyMzEwNiwiZXhwIjoxNzY2MDA5NTA2fQ.OrmD41Pl1tdMcpWC9ue0MZN-u7u2RATtfGwhyouSrd0
+}
+
+body:json {
+  {
+      "username": "John",
+      "avatar": "hero-1",
+      "roomName": "My Office"
+    }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
